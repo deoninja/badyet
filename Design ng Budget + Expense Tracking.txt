@@ -1,0 +1,73 @@
+Design ng Budget + Expense Tracking PWA
+1. Architecture (Single-page app, pure offline)
+┌─────────────────────────────────────────────┐
+│                  PWA                         │
+│  React + Vite + vite-plugin-pwa             │
+│                                              │
+│  ┌──────────────┐   ┌──────────────────────┐ │
+│  │   UI Layer   │   │  Service Worker      │ │
+│  │  (React)     │   │  (offline caching)   │ │
+│  └──────┬───────┘   └──────────────────────┘ │
+│         │                                   │
+│  ┌──────▼──────────────────────────────────┐ │
+│  │  IndexedDB (local data store)           │ │
+│  │  - income / deductions                  │ │
+│  │  - budget method + allocations          │ │
+│  │  - expenses (category, amount, date)    │ │
+│  │  - savings goals (target, deadline)     │ │
+│  └─────────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+        │
+        ▼
+   Vercel OR Netlify (free HTTPS, PWA-ready)
+
+Wala kang backend, wala kang account, wala kang sync. Lahat ng data ay nananatili sa device mo lang. I-install mo lang sa phone via browser “Add to Home Screen”.
+
+2. Data model ( IndexedDB — 4 stores)
+Store	Mga fields	Gamit
+settings	netIncome, budgetMethod, currency	Iyong monthly take-home pay at piling method
+categories	id, name, type (need/want/saving)	Mga category tulad ng food, transport, invest
+expenses	id, categoryId, amount, date, note	Iyong ginagastos
+goals	id, name, targetAmount, deadline, savedAmount	Mga target: invest, emergency, sasakyan, bahay-kasal
+3. 6 Budget Methods ( Lahat included, default = 50/30/20 )
+Method	Allocation	Best for
+50/30/20 ⭐ default	50% need / 30% want / 20% save	Simple, beginner
+Zero-Based	Lahat ng income分配, total = income	Full control
+Envelope	Category caps (food, gas, etc.)	Prevent overspending
+Pay Yourself First	Save first, then spend	Consistent savings
+70/20/10	70% spend / 20% save / 10% donate	Simple + charity
+60/20/20	60% spend / 20% save / 20% other	Balanced
+4. Screens / Features
+Setup — Ilagay mo ang net monthly income (default 30k), piliin method, set currency
+Dashboard — This month: income, total spent, remaining, allocation bars (need/want/save)
+Budget breakdown — Per category: allocated vs spent, remaining indicator (green/red)
+Add expense — Piliin category, amount, date, optional note
+Savings goals — List of goals with progress bar, target, deadline (editable), saved amount
+History — Past expenses, filter by category/date
+Method switcher — Magpalit ng budget method anytime
+5. Data flow
+On app load: IndexedDB → read settings, categories, expenses, goals
+User enters income → settings store updated, all allocations recompute
+User adds expense → expenses store updated, dashboard recalculates remaining
+User edits goal → goals store updated, progress bar reflects
+All reads/writes are async (IndexedDB promises)
+6. Error handling
+IndexedDB unavailable → fallback to localStorage, show warning
+Invalid input (negative amount, empty category) → inline error, don’t save
+Goal deadline in past → warning but still allow (per option C, editable)
+Corrupted DB → reset button, seed defaults
+7. PWA specifics
+manifest.json — name, icons (72x72, 96x96, 128x128, 152x152, 192x192, 512x512), theme colors, display: standalone
+Service Worker via vite-plugin-pwa (auto-generated Workbox) — caches app shell + fonts, serves offline
+HTTPS required (Vercel/Netlify provide this free)
+Installable on Android (Chrome/Edge) and iOS (Safari)
+8. Testing
+Unit: allocation math for each of the 6 methods
+Unit: IndexedDB CRUD operations (mocked IDB)
+Integration: add expense → dashboard reflects remaining
+Manual: offline test (disable network, reload, app still works)
+
+Dalawang decision na kailangan mo pumili bago simulan:
+
+Vercel o Netlify? Pareho namang free + HTTPS. Vercel mas mabilis for React/Node, Netlify mas simple for static. Ano mas feel mo?
+Success criteria — Ano ang tawag mo na “done”? Hal: “Nakapag-add ng expense at nagkakaroon ng dashboard” o “Lahat ng 6 methods ay gumagana”?
