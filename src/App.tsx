@@ -12,7 +12,7 @@ import { AddExpense } from './screens/AddExpense'
 import { Goals } from './screens/Goals'
 import { History } from './screens/History'
 import { Setup } from './screens/Setup'
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from '@vercel/analytics/react'
 
 interface Toast {
   message: string
@@ -184,7 +184,7 @@ export default function App() {
 
       <InstallPrompt />
       <Analytics />
-
+        
       {toast ? (
         <div
           className={`toast${toast.tone === 'error' ? ' is-error' : ''}`}
