@@ -24,32 +24,45 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+let promptEvent: BeforeInstallPromptEvent | null = null
+let installed = false
+const installListeners = new Set<() => void>()
+
+function emitInstallChange() {
+  for (const listener of installListeners) listener()
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault()
+    promptEvent = event as BeforeInstallPromptEvent
+    emitInstallChange()
+  })
+  window.addEventListener('appinstalled', () => {
+    installed = true
+    promptEvent = null
+    emitInstallChange()
+  })
+}
+
 export function useInstallPrompt() {
-  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
-  const [installed, setInstalled] = useState(false)
+  const [, forceRender] = useState(0)
 
   useEffect(() => {
-    const onPrompt = (event: Event) => {
-      event.preventDefault()
-      setPromptEvent(event as BeforeInstallPromptEvent)
-    }
-    const onInstalled = () => {
-      setInstalled(true)
-      setPromptEvent(null)
-    }
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    window.addEventListener('appinstalled', onInstalled)
+    const listener = () => forceRender((value) => value + 1)
+    installListeners.add(listener)
     return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt)
-      window.removeEventListener('appinstalled', onInstalled)
+      installListeners.delete(listener)
     }
   }, [])
 
   const install = async () => {
-    if (!promptEvent) return
-    await promptEvent.prompt()
-    await promptEvent.userChoice
-    setPromptEvent(null)
+    const event = promptEvent
+    if (!event) return
+    await event.prompt()
+    await event.userChoice
+    promptEvent = null
+    emitInstallChange()
   }
 
   return { canInstall: promptEvent !== null, installed, install }

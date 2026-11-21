@@ -15,7 +15,8 @@ Developed by **Deo Trinidad**.
   add an optional note.
 - **Savings goals** — track targets, deadlines, and contributions with progress bars.
 - **History** — filter expenses by category and date range, then delete entries.
-- **Installable PWA** — works offline after the first load and can be added to the home screen.
+- **Installable PWA** — works offline after the first load, can be added to the home screen, and
+  shows a one-time install prompt on the first visit.
 
 ## Budget methods
 

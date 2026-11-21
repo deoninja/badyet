@@ -5,6 +5,7 @@ import { useOnline } from './hooks/usePwa'
 import { METHODS } from './lib/budget'
 import { currentMonth } from './lib/date'
 import { Layout } from './components/Layout'
+import { InstallPrompt } from './components/InstallPrompt'
 import { Dashboard } from './screens/Dashboard'
 import { Budget } from './screens/Budget'
 import { AddExpense } from './screens/AddExpense'
@@ -179,6 +180,8 @@ export default function App() {
           <Setup settings={data.settings} onSave={saveSetup} onReset={resetAll} />
         ) : null}
       </Layout>
+
+      <InstallPrompt />
 
       {toast ? (
         <div

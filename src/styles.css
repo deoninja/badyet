@@ -2231,6 +2231,54 @@ input[type='number'] {
   background: #8f2f12;
 }
 
+.install-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  z-index: 85;
+  display: grid;
+  gap: 10px;
+  width: min(430px, calc(100vw - 24px));
+  padding: 16px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow:
+    0 18px 44px rgba(5, 15, 10, 0.18),
+    4px 4px 0 rgba(19, 42, 30, 0.06);
+  transform: translateX(-50%);
+  animation: toastIn 0.28s ease;
+}
+
+.install-prompt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.install-prompt-head h2 {
+  margin-top: 4px;
+  font-size: 19px;
+}
+
+.install-prompt-copy {
+  max-width: 46ch;
+}
+
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.install-prompt-hint {
+  flex: 1;
+  min-width: 180px;
+}
+
 .fab {
   position: fixed;
   right: 18px;
@@ -2611,6 +2659,10 @@ input[type='number'] {
 
 @media (min-width: 941px) {
   .toast {
+    bottom: 26px;
+  }
+
+  .install-prompt {
     bottom: 26px;
   }
 
