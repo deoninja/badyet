@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { Category, CategoryType, Expense, Settings } from '../types'
 import { METHODS, allocate } from '../lib/budget'
 import { CATEGORY_TYPES, TYPE_COLOR, TYPE_LABEL } from '../db/seed'
-import { expensesInMonth, byCategory, spentByType } from '../lib/summary'
+import { expensesInPeriod, byCategory, spentByType } from '../lib/summary'
 import { formatMoney, formatPercent } from '../lib/money'
 import { newId } from '../lib/id'
-import { MonthSwitch } from '../components/MonthSwitch'
+import type { PayPeriod } from '../lib/date'
+import { PeriodSwitch } from '../components/PeriodSwitch'
 import { Select } from '../components/Select'
 import { CheckIcon, PlusIcon, TrashIcon } from '../components/icons'
 import { ErrorText, ProgressBar, ScreenHead, useArmed } from '../components/ui'
@@ -28,8 +29,8 @@ interface BudgetProps {
   settings: Settings
   categories: Category[]
   expenses: Expense[]
-  month: string
-  onMonthChange: (month: string) => void
+  period: PayPeriod
+  onPeriodChange: (start: string) => void
   onSaveCategory: (category: Category) => Promise<void>
   onDeleteCategory: (id: string) => Promise<void>
   notify: (message: string, tone?: 'default' | 'error') => void
@@ -39,20 +40,20 @@ export function Budget({
   settings,
   categories,
   expenses,
-  month,
-  onMonthChange,
+  period,
+  onPeriodChange,
   onSaveCategory,
   onDeleteCategory,
   notify
 }: BudgetProps) {
   const fmt = (value: number) => formatMoney(value, settings.currency)
-  const monthly = useMemo(() => expensesInMonth(expenses, month), [expenses, month])
-  const spentMap = useMemo(() => byCategory(monthly), [monthly])
-  const typeSpent = useMemo(() => spentByType(monthly, categories), [monthly, categories])
+  const periodExpenses = useMemo(() => expensesInPeriod(expenses, period), [expenses, period])
+  const spentMap = useMemo(() => byCategory(periodExpenses), [periodExpenses])
+  const typeSpent = useMemo(() => spentByType(periodExpenses, categories), [periodExpenses, categories])
   const allocation = useMemo(
     () =>
       allocate({
-        income: settings.netIncome,
+        income: settings.payAmount,
         method: settings.budgetMethod,
         pyfSavePercent: settings.pyfSavePercent,
         categories: categories.map((category) => ({ type: category.type, cap: category.cap }))
@@ -110,7 +111,14 @@ export function Budget({
       <ScreenHead
         eyebrow="Budget"
         title="Break down the plan"
-        extra={<MonthSwitch month={month} onChange={onMonthChange} />}
+        extra={
+          <PeriodSwitch
+            period={period}
+            frequency={settings.payFrequency}
+            anchor={settings.payAnchor}
+            onChange={onPeriodChange}
+          />
+        }
       />
 
       <section className="card card-pad alloc-status">
@@ -133,7 +141,7 @@ export function Budget({
           )}
           <p className="muted small">
             {method.categoryBased
-              ? 'Set a monthly cap per category. Caps are summed into the plan and compared with income.'
+              ? 'Set a cap per pay period. Caps are summed into the plan and compared with each paycheck.'
               : `${method.bestFor}. Caps below are optional but useful as guardrails.`}
           </p>
         </div>
@@ -354,7 +362,7 @@ function CategoryRow({
               event.currentTarget.blur()
             }
           }}
-          aria-label={`Monthly cap for ${category.name}`}
+          aria-label={`Cap per pay period for ${category.name}`}
         />
       </label>
 

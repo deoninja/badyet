@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 import type { Category, CategoryType, Expense, Goal, Settings } from '../types'
 import { METHODS, METHOD_LIST, BUCKET_TYPES } from '../lib/budget'
 import { TYPE_LABEL, TYPE_COLOR } from '../db/seed'
-import { formatDate, monthLabel } from '../lib/date'
+import { formatDate, type PayPeriod } from '../lib/date'
 import { formatMoney, formatPercent } from '../lib/money'
 import { budgetSnapshot, spentForBucket, totalSaved } from '../lib/summary'
-import { MonthSwitch } from '../components/MonthSwitch'
+import { PeriodSwitch } from '../components/PeriodSwitch'
 import { ArrowUpRightIcon } from '../components/icons'
 import { EmptyState, ProgressBar, ScreenHead } from '../components/ui'
 import { Select } from '../components/Select'
@@ -15,8 +15,8 @@ interface DashboardProps {
   categories: Category[]
   expenses: Expense[]
   goals: Goal[]
-  month: string
-  onMonthChange: (month: string) => void
+  period: PayPeriod
+  onPeriodChange: (start: string) => void
   onNavigate: (route: 'budget' | 'add' | 'history' | 'goals') => void
   onMethodChange: (method: Settings['budgetMethod']) => void
 }
@@ -26,14 +26,14 @@ export function Dashboard({
   categories,
   expenses,
   goals,
-  month,
-  onMonthChange,
+  period,
+  onPeriodChange,
   onNavigate,
   onMethodChange
 }: DashboardProps) {
   const snapshot = useMemo(
-    () => budgetSnapshot(settings, categories, expenses, month),
-    [settings, categories, expenses, month]
+    () => budgetSnapshot(settings, categories, expenses, period),
+    [settings, categories, expenses, period]
   )
 
   const fmt = (value: number) => formatMoney(value, settings.currency)
@@ -55,11 +55,11 @@ export function Dashboard({
   )
   const recent = useMemo(
     () =>
-      snapshot.monthExpenses
+      snapshot.periodExpenses
         .slice()
         .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
         .slice(0, 5),
-    [snapshot.monthExpenses]
+    [snapshot.periodExpenses]
   )
 
   const allocationTotal = Math.max(snapshot.allocation.totalAllocated, snapshot.income, 1)
@@ -69,14 +69,21 @@ export function Dashboard({
     <div className="screen stagger">
       <ScreenHead
         eyebrow="Dashboard"
-        title="Your month at a glance"
-        extra={<MonthSwitch month={month} onChange={onMonthChange} />}
+        title="Your pay period at a glance"
+        extra={
+          <PeriodSwitch
+            period={period}
+            frequency={settings.payFrequency}
+            anchor={settings.payAnchor}
+            onChange={onPeriodChange}
+          />
+        }
       />
 
       <section className="hero">
         <div className="hero-main">
           <span className="hero-eyebrow">
-            {snapshot.remaining < 0 ? 'Over budget' : 'Left to spend'} · {monthLabel(month)}
+            {snapshot.remaining < 0 ? 'Over budget' : 'Left to spend'} · {period.label}
           </span>
           <div className={`hero-amount${snapshot.remaining < 0 ? ' is-negative' : ''}`}>
             {fmt(snapshot.remaining)}
@@ -255,7 +262,7 @@ export function Dashboard({
 
           {recent.length === 0 ? (
             <EmptyState
-              title="Nothing logged this month"
+              title="Nothing logged this period"
               body="Add your first expense and the dashboard will update instantly."
               action={
                 <button type="button" className="btn btn-primary btn-sm" onClick={() => onNavigate('add')}>

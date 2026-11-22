@@ -6,7 +6,7 @@ import {
   type Allocation,
   type AllocationBucketKey
 } from './budget'
-import { monthOf } from './date'
+import type { PayPeriod } from './date'
 
 export type BucketSpent = Record<AllocationBucketKey, number>
 export type TypeSpent = Record<CategoryType, number>
@@ -19,8 +19,8 @@ export function emptyTypeSpent(): TypeSpent {
   return { need: 0, want: 0, saving: 0, donate: 0, other: 0 }
 }
 
-export function expensesInMonth(expenses: Expense[], month: string): Expense[] {
-  return expenses.filter((expense) => monthOf(expense.date) === month)
+export function expensesInPeriod(expenses: Expense[], period: PayPeriod): Expense[] {
+  return expenses.filter((expense) => expense.date >= period.start && expense.date <= period.end)
 }
 
 export function sumAmounts(list: { amount: number }[]): number {
@@ -69,33 +69,33 @@ export interface BudgetSnapshot {
   byBucketSpent: BucketSpent
   byTypeSpent: TypeSpent
   byCategorySpent: Record<string, number>
-  monthExpenses: Expense[]
+  periodExpenses: Expense[]
 }
 
 export function budgetSnapshot(
   settings: Settings,
   categories: Category[],
   expenses: Expense[],
-  month: string
+  period: PayPeriod
 ): BudgetSnapshot {
-  const monthExpenses = expensesInMonth(expenses, month)
+  const periodExpenses = expensesInPeriod(expenses, period)
   const allocation = allocate({
-    income: settings.netIncome,
+    income: settings.payAmount,
     method: settings.budgetMethod,
     pyfSavePercent: settings.pyfSavePercent,
     categories: categories.map((category) => ({ type: category.type, cap: category.cap }))
   })
-  const byTypeSpent = spentByType(monthExpenses, categories)
-  const spent = sumAmounts(monthExpenses)
+  const byTypeSpent = spentByType(periodExpenses, categories)
+  const spent = sumAmounts(periodExpenses)
   return {
-    income: settings.netIncome,
+    income: settings.payAmount,
     spent,
-    remaining: settings.netIncome - spent,
+    remaining: settings.payAmount - spent,
     allocation,
-    byBucketSpent: spentByBucket(monthExpenses, categories),
+    byBucketSpent: spentByBucket(periodExpenses, categories),
     byTypeSpent,
-    byCategorySpent: byCategory(monthExpenses),
-    monthExpenses
+    byCategorySpent: byCategory(periodExpenses),
+    periodExpenses
   }
 }
 

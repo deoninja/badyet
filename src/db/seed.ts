@@ -1,13 +1,68 @@
-import type { Category, CategoryType, Settings } from '../types'
+import type { Category, CategoryType, PayFrequency, Settings } from '../types'
+import { todayISO } from '../lib/date'
+
+export const PAY_FREQUENCIES: { value: PayFrequency; label: string; hint: string }[] = [
+  { value: 'weekly', label: 'Weekly', hint: 'A paycheck every 7 days' },
+  { value: 'biweekly', label: 'Every 2 weeks', hint: 'A paycheck every 14 days' },
+  { value: 'semimonthly', label: 'Twice a month', hint: '1st–15th and 16th–end of month' },
+  { value: 'monthly', label: 'Monthly', hint: 'One paycheck a month' }
+]
+
+const PAY_FREQUENCY_VALUES = new Set<PayFrequency>(
+  PAY_FREQUENCIES.map((option) => option.value)
+)
+
+export function isPayFrequency(value: unknown): value is PayFrequency {
+  return typeof value === 'string' && PAY_FREQUENCY_VALUES.has(value as PayFrequency)
+}
+
+export function monthlyEquivalent(payAmount: number, frequency: PayFrequency): number {
+  const amount = Number.isFinite(payAmount) ? payAmount : 0
+  switch (frequency) {
+    case 'weekly':
+      return (amount * 52) / 12
+    case 'biweekly':
+      return (amount * 26) / 12
+    case 'semimonthly':
+      return amount * 2
+    case 'monthly':
+      return amount
+  }
+}
 
 export function freshSettings(): Settings {
   return {
     id: 'app',
     netIncome: 30000,
+    payAmount: 30000,
+    payFrequency: 'monthly',
+    payAnchor: todayISO(),
     budgetMethod: 'fifty_thirty_twenty',
     currency: '₱',
     pyfSavePercent: 20,
     setupComplete: false
+  }
+}
+
+export function normalizeSettings(stored: Partial<Settings>): Settings {
+  const base = freshSettings()
+  const legacyIncome = typeof stored.netIncome === 'number' ? stored.netIncome : undefined
+  const payAmount =
+    typeof stored.payAmount === 'number' && Number.isFinite(stored.payAmount)
+      ? stored.payAmount
+      : (legacyIncome ?? base.payAmount)
+  const payFrequency = isPayFrequency(stored.payFrequency) ? stored.payFrequency : base.payFrequency
+  const payAnchor =
+    typeof stored.payAnchor === 'string' && stored.payAnchor ? stored.payAnchor : base.payAnchor
+
+  return {
+    ...base,
+    ...stored,
+    id: 'app',
+    netIncome: legacyIncome ?? payAmount,
+    payAmount,
+    payFrequency,
+    payAnchor
   }
 }
 

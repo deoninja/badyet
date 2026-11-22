@@ -10,9 +10,17 @@ export type CategoryType = 'need' | 'want' | 'saving' | 'donate' | 'other'
 
 export type BucketKey = 'need' | 'want' | 'save' | 'spend' | 'donate' | 'other'
 
+export type PayFrequency = 'weekly' | 'biweekly' | 'semimonthly' | 'monthly'
+
 export interface Settings {
   id: 'app'
+  /** Monthly take-home equivalent. Kept for migration and display only. */
   netIncome: number
+  /** Take-home pay for a single paycheck. */
+  payAmount: number
+  payFrequency: PayFrequency
+  /** Start date of a known pay period, used to anchor weekly/biweekly periods. */
+  payAnchor: string
   budgetMethod: BudgetMethod
   currency: string
   pyfSavePercent: number

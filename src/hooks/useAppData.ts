@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Category, Expense, Goal, Settings } from '../types'
 import { openAppDb, deleteAppDatabase, type AppDb, type StorageMode } from '../db/db'
-import { defaultCategories, freshSettings } from '../db/seed'
+import { defaultCategories, freshSettings, normalizeSettings } from '../db/seed'
 import { newId } from '../lib/id'
 
 export interface AppDataState {
@@ -36,11 +36,11 @@ export function useAppData() {
     try {
       const db = await openAppDb()
       dbRef.current = db
-      let settings = (await db.getAll('settings'))[0]
+      const storedSettings = (await db.getAll('settings'))[0]
       let categories = await db.getAll('categories')
 
-      if (!settings) {
-        settings = freshSettings()
+      const settings = storedSettings ? normalizeSettings(storedSettings) : freshSettings()
+      if (!storedSettings || JSON.stringify(storedSettings) !== JSON.stringify(settings)) {
         await db.put('settings', settings)
       }
       if (categories.length === 0) {

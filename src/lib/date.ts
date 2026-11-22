@@ -1,3 +1,5 @@
+import type { PayFrequency } from '../types'
+
 function pad2(value: number): string {
   return String(value).padStart(2, '0')
 }
@@ -76,4 +78,106 @@ export function deadlineLabel(iso: string): string {
 
 export function isMonthAfter(first: string, second: string): boolean {
   return first > second
+}
+
+export function addDays(iso: string, days: number): string {
+  const date = parseISODate(iso)
+  date.setDate(date.getDate() + days)
+  return isoOf(date)
+}
+
+export function endOfMonth(iso: string): string {
+  const date = parseISODate(iso)
+  return isoOf(new Date(date.getFullYear(), date.getMonth() + 1, 0))
+}
+
+export interface PayPeriod {
+  start: string
+  end: string
+  label: string
+  key: string
+}
+
+const PERIOD_LENGTH: Record<'weekly' | 'biweekly', number> = {
+  weekly: 7,
+  biweekly: 14
+}
+
+function periodRangeLabel(startISO: string, endISO: string): string {
+  const start = parseISODate(startISO)
+  const end = parseISODate(endISO)
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+  const startText = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const endText = end.toLocaleDateString('en-US', {
+    month: sameMonth ? undefined : 'short',
+    day: 'numeric'
+  })
+  return `${startText} – ${endText}, ${end.getFullYear()}`
+}
+
+export function payPeriodFor(
+  iso: string,
+  frequency: PayFrequency,
+  anchorISO: string
+): PayPeriod {
+  if (frequency === 'monthly') {
+    const month = monthOf(iso)
+    const start = `${month}-01`
+    const end = endOfMonth(iso)
+    return { start, end, key: start, label: monthLabel(month) }
+  }
+
+  if (frequency === 'semimonthly') {
+    const month = monthOf(iso)
+    if (parseISODate(iso).getDate() <= 15) {
+      const start = `${month}-01`
+      const end = `${month}-15`
+      return { start, end, key: start, label: periodRangeLabel(start, end) }
+    }
+    const start = `${month}-16`
+    const end = endOfMonth(iso)
+    return { start, end, key: start, label: periodRangeLabel(start, end) }
+  }
+
+  const length = PERIOD_LENGTH[frequency]
+  const anchor = anchorISO || iso
+  const diff = Math.round(
+    (parseISODate(iso).getTime() - parseISODate(anchor).getTime()) / 86_400_000
+  )
+  const start = addDays(anchor, Math.floor(diff / length) * length)
+  const end = addDays(start, length - 1)
+  return { start, end, key: start, label: periodRangeLabel(start, end) }
+}
+
+export function currentPayPeriod(frequency: PayFrequency, anchorISO: string): PayPeriod {
+  return payPeriodFor(todayISO(), frequency, anchorISO)
+}
+
+export function shiftPayPeriod(
+  period: PayPeriod,
+  delta: number,
+  frequency: PayFrequency,
+  anchorISO: string
+): PayPeriod {
+  if (frequency === 'monthly') {
+    return payPeriodFor(`${shiftMonth(monthOf(period.start), delta)}-01`, frequency, anchorISO)
+  }
+
+  if (frequency === 'semimonthly') {
+    let cursor = period.start
+    const step = delta >= 0 ? 1 : -1
+    for (let index = 0; index < Math.abs(delta); index += 1) {
+      const month = monthOf(cursor)
+      const firstHalf = cursor.endsWith('-01')
+      if (step > 0) {
+        cursor = firstHalf ? `${month}-16` : `${shiftMonth(month, 1)}-01`
+      } else {
+        cursor = firstHalf ? `${shiftMonth(month, -1)}-16` : `${month}-01`
+      }
+    }
+    return payPeriodFor(cursor, frequency, anchorISO)
+  }
+
+  const length = PERIOD_LENGTH[frequency]
+  return payPeriodFor(addDays(period.start, delta * length), frequency, anchorISO)
 }
