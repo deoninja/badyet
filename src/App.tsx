@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { BudgetMethod, Route, Settings } from './types'
 import { useAppData, type NewExpense } from './hooks/useAppData'
 import { useOnline } from './hooks/usePwa'
 import { METHODS } from './lib/budget'
-import { currentMonth } from './lib/date'
+import { payPeriodFor, todayISO } from './lib/date'
 import { Layout } from './components/Layout'
 import { InstallPrompt } from './components/InstallPrompt'
 import { Dashboard } from './screens/Dashboard'
@@ -27,8 +27,18 @@ export default function App() {
   const data = useAppData()
   const online = useOnline()
   const [route, setRoute] = useState<Route>('dashboard')
-  const [month, setMonth] = useState(currentMonth())
+  const [periodStart, setPeriodStart] = useState(todayISO())
   const [toast, setToast] = useState<Toast | null>(null)
+
+  const period = useMemo(
+    () =>
+      payPeriodFor(
+        periodStart,
+        data.settings.payFrequency,
+        data.settings.payAnchor
+      ),
+    [periodStart, data.settings.payFrequency, data.settings.payAnchor]
+  )
 
   useEffect(() => {
     if (!toast) return
@@ -51,7 +61,7 @@ export default function App() {
 
   const addExpense = async (input: NewExpense) => {
     await data.addExpense(input)
-    setMonth(input.date.slice(0, 7))
+    setPeriodStart(input.date)
     notify('Expense added')
     setRoute('dashboard')
   }
@@ -86,7 +96,7 @@ export default function App() {
 
   const resetAll = async () => {
     await data.resetAll()
-    setMonth(currentMonth())
+    setPeriodStart(todayISO())
     notify('All data reset to the starting point')
   }
 
@@ -130,8 +140,8 @@ export default function App() {
             categories={data.categories}
             expenses={data.expenses}
             goals={data.goals}
-            month={month}
-            onMonthChange={setMonth}
+            period={period}
+            onPeriodChange={setPeriodStart}
             onNavigate={setRoute}
             onMethodChange={(method) => void changeMethod(method)}
           />
@@ -142,8 +152,8 @@ export default function App() {
             settings={data.settings}
             categories={data.categories}
             expenses={data.expenses}
-            month={month}
-            onMonthChange={setMonth}
+            period={period}
+            onPeriodChange={setPeriodStart}
             onSaveCategory={data.saveCategory}
             onDeleteCategory={data.deleteCategory}
             notify={notify}

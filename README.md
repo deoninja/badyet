@@ -7,10 +7,12 @@ Developed by **Deo Trinidad**.
 
 ## Features
 
-- **Setup** — set monthly take-home pay, currency, and budget method.
-- **Dashboard** — see income, spending, remaining balance, allocation split, and recent activity.
+- **Setup** — set take-home pay per paycheck, pay frequency (weekly, every 2 weeks, twice a month,
+  or monthly), currency, and budget method.
+- **Dashboard** — see income, spending, remaining balance, allocation split, and recent activity
+  for the current pay period.
 - **Budget breakdown** — group categories by needs, wants, savings, donations, and other, with
-  optional per-category monthly caps.
+  optional per-category caps that reset every pay period.
 - **Add expense** — pick a category, enter an amount, choose a date with the themed calendar, and
   add an optional note.
 - **Savings goals** — track targets, deadlines, and contributions with progress bars.

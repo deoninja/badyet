@@ -194,7 +194,7 @@ export function Goals({ goals, currency, onSave, onDelete }: GoalsProps) {
 
       <p className="screen-footnote">
         Deadlines can be in the past — the app warns you but still tracks the goal. Savings here are
-        tracked separately from monthly spending.
+        tracked separately from pay period spending.
       </p>
 
       <Modal
