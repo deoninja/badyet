@@ -49,6 +49,7 @@ export function Layout({
         <button
           type="button"
           className="wordmark"
+          id="tour-home"
           onClick={() => onNavigate('dashboard')}
           aria-label="Badyet home"
         >
@@ -64,6 +65,7 @@ export function Layout({
               key={item.route}
               type="button"
               className={`nav-item${route === item.route ? ' is-active' : ''}`}
+              id={`tour-${item.route}`}
               onClick={() => onNavigate(item.route)}
               aria-current={route === item.route ? 'page' : undefined}
             >
@@ -82,7 +84,7 @@ export function Layout({
             No accounts. No sync. Your data stays in this browser.
           </p>
           <p className="credit xsmall">
-            Developed by <strong>Deo Trinidad</strong>
+            Developed by <strong>Deo Trinidad</strong> <span className="muted">v1.0.2</span>
           </p>
         </div>
       </aside>
@@ -92,6 +94,7 @@ export function Layout({
           <button
             type="button"
             className="wordmark wordmark-sm"
+            id="tour-home-mobile"
             onClick={() => onNavigate('dashboard')}
             aria-label="Badyet home"
           >
@@ -104,6 +107,7 @@ export function Layout({
             <button
               type="button"
               className={`icon-btn${route === 'setup' ? ' is-active' : ''}`}
+              id="tour-settings"
               onClick={() => onNavigate('setup')}
               aria-label="Setup and data"
             >
@@ -117,7 +121,7 @@ export function Layout({
       </div>
 
       {route !== 'add' ? (
-        <button type="button" className="fab" onClick={onAdd} aria-label="Add expense">
+        <button type="button" className="fab" id="tour-add-expense" onClick={onAdd} aria-label="Add expense">
           <PlusIcon width={24} height={24} />
         </button>
       ) : null}
@@ -128,6 +132,7 @@ export function Layout({
             key={item.route}
             type="button"
             className={`nav-mobile-item${route === item.route ? ' is-active' : ''}`}
+            id={`tour-mobile-${item.route}`}
             onClick={() => onNavigate(item.route)}
             aria-current={route === item.route ? 'page' : undefined}
           >

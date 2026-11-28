@@ -5,6 +5,7 @@ import { useOnline } from './hooks/usePwa'
 import { METHODS } from './lib/budget'
 import { payPeriodFor, todayISO } from './lib/date'
 import { Layout } from './components/Layout'
+import { OnboardingTour } from './components/OnboardingTour'
 import { InstallPrompt } from './components/InstallPrompt'
 import { Dashboard } from './screens/Dashboard'
 import { Budget } from './screens/Budget'
@@ -29,6 +30,7 @@ export default function App() {
   const [route, setRoute] = useState<Route>('dashboard')
   const [periodStart, setPeriodStart] = useState(todayISO())
   const [toast, setToast] = useState<Toast | null>(null)
+  const [showTour, setShowTour] = useState(false)
 
   const period = useMemo(
     () =>
@@ -46,8 +48,24 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  useEffect(() => {
+    const seen = localStorage.getItem('tourSeen')
+    if (!seen && !data.settings.setupComplete) setShowTour(true)
+  }, [data.settings.setupComplete])
+
   const notify = (message: string, tone: 'default' | 'error' = 'default') => {
     setToast({ message, tone })
+  }
+
+  const handleTourClose = () => {
+    setShowTour(false)
+    localStorage.setItem('tourSeen', '1')
+  }
+
+  const handleStartTour = () => {
+    setShowTour(true)
+    setRoute('dashboard')
+    localStorage.removeItem('tourSeen')
   }
 
   const changeMethod = async (method: BudgetMethod) => {
@@ -188,13 +206,17 @@ export default function App() {
         ) : null}
 
         {route === 'setup' ? (
-          <Setup settings={data.settings} onSave={saveSetup} onReset={resetAll} />
+          <Setup settings={data.settings} onSave={saveSetup} onReset={resetAll} onStartTour={handleStartTour} />
         ) : null}
       </Layout>
 
       <InstallPrompt />
       <Analytics />
         
+      {showTour ? (
+        <OnboardingTour onClose={handleTourClose} />
+      ) : null}
+
       {toast ? (
         <div
           className={`toast${toast.tone === 'error' ? ' is-error' : ''}`}
