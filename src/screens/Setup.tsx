@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useRef } from 'react'
 import type { BudgetMethod, PayFrequency, Settings } from '../types'
 import { METHOD_LIST } from '../lib/budget'
 import { PAY_FREQUENCIES, monthlyEquivalent } from '../db/seed'
@@ -18,9 +18,10 @@ interface SetupProps {
   settings: Settings
   onSave: (patch: Partial<Omit<Settings, 'id'>>) => Promise<void>
   onReset: () => Promise<void>
+  onStartTour: () => void
 }
 
-export function Setup({ settings, onSave, onReset }: SetupProps) {
+export function Setup({ settings, onSave, onReset, onStartTour }: SetupProps) {
   const [income, setIncome] = useState(String(settings.payAmount))
   const [frequency, setFrequency] = useState<PayFrequency>(settings.payFrequency)
   const [anchor, setAnchor] = useState(settings.payAnchor || todayISO())
@@ -30,6 +31,8 @@ export function Setup({ settings, onSave, onReset }: SetupProps) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const feedbackRef = useRef<HTMLTextAreaElement>(null)
   const { armed, trigger } = useArmed(4000)
   const { canInstall, installed, install } = useInstallPrompt()
 
@@ -88,14 +91,23 @@ export function Setup({ settings, onSave, onReset }: SetupProps) {
       <ScreenHead eyebrow="Setup" title="Set the ground rules" />
 
       {!settings.setupComplete ? (
-        <div className="welcome-banner">
-          <span className="eyebrow">Welcome to Badyet</span>
-          <p>
-            Enter your take-home pay and how often you get paid, then pick a budget method. Badyet
-            builds the plan around each paycheck — you can change it all later.
-          </p>
-        </div>
-      ) : null}
+        <>
+          <div className="welcome-banner">
+            <span className="eyebrow">Welcome to Badyet</span>
+            <p>
+              Enter your take-home pay and how often you get paid, then pick a budget method. Badyet
+              builds the plan around each paycheck — you can change it all later.
+            </p>
+          </div>
+          <button type="button" className="btn btn-lime" onClick={onStartTour}>
+            Take a tour
+          </button>
+        </>
+      ) : (
+        <button type="button" className="btn btn-lime" onClick={onStartTour}>
+          Replay tour
+        </button>
+      )}
 
       <form className="card card-pad settings-card" onSubmit={(event) => void submit(event)}>
         <div className="section-head">
@@ -276,10 +288,49 @@ export function Setup({ settings, onSave, onReset }: SetupProps) {
           Reset removes every expense, goal, and custom category, then restores the default 30,000
           monthly pay and starter categories. It cannot be undone.
         </p>
+
+        <section className="card card-pad data-card feedback-section">
+          <div className="section-head">
+            <div>
+              <span className="eyebrow">Your voice</span>
+              <h2>Suggestion &amp; Comment</h2>
+            </div>
+          </div>
+          <textarea
+            ref={feedbackRef}
+            rows={4}
+            placeholder="What can Badyet do better? Share tips, bugs, or ideas..."
+            className="feedback-textarea"
+            onChange={(e) => {
+              const value = e.target.value.trim()
+              if (value) {
+                localStorage.setItem('badyet_feedback', value)
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              const value = feedbackRef.current?.value.trim()
+              if (value) {
+                localStorage.setItem('badyet_feedback', value)
+                const subject = encodeURIComponent('Badyet Suggestion')
+                const body = encodeURIComponent(value)
+                window.location.href = `mailto:badyetsupport@gmail.com?subject=${subject}&body=${body}`
+              }
+              setSavedMessage('Thanks! Your email client opened with the suggestion.')
+            }}
+          >
+            Send Feedback
+          </button>
+          {savedMessage ? <p className="xsmall muted saved-message">{savedMessage}</p> : null}
+        </section>
+
       </section>
 
       <p className="screen-footnote">
-        Developed by <strong>Deo Trinidad</strong>.
+        Developed by <strong>Deo Trinidad</strong> · Badyet v1.0.2
       </p>
     </div>
   )
